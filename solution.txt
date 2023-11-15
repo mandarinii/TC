@@ -1,0 +1,70 @@
+# скачать фреймворк даркнет c GitHub
+!git clone https://github.com/AlexeyAB/darknet
+# изменение файла makefile, чтобы включить графический процессор и OPENCV
+%cd darknet
+!sed -i 's/OPENCV=0/OPENCV=1/' Makefile
+!sed -i 's/GPU=0/GPU=1/' Makefile
+!sed -i 's/CUDNN=0/CUDNN=1/' Makefile
+!sed -i 's/CUDNN_HALF=0/CUDNN_HALF=1/' Makefile
+# проверка CUDA
+!/usr/local/cuda/bin/nvcc --version
+# создание даркнета
+!make
+
+
+# для работы с колабом
+from google.colab import drive
+drive.mount('/content/drive')
+
+# набор данных хранится на Google Диске
+# для удобства создал папку yolov4 со всеми данными
+!ls /content/drive/MyDrive/yolov4/
+
+# датасет
+!cp /content/drive/MyDrive/yolov4/obj.zip ../
+
+
+# распаковка
+!unzip ../obj.zip -d data/obj
+
+# cfg  файл для обучения
+!cp /content/darknet/cfg/yolov4-custom.cfg /content/drive/MyDrive/yolov4/yolov4-obj.cfg
+
+
+# перемещение в колаб
+!cp /content/drive/MyDrive/yolov4/yolov4-obj.cfg  ./cfg
+
+# в колаб
+!cp /content/drive/MyDrive/yolov4/obj.names ./data
+!cp /content/drive/MyDrive/yolov4/obj.data  ./data
+
+
+# Клонируем репозиторий с 
+!git clone https://github.com/theAIGuysCode/YOLOv4-Cloud-Tutorial
+#запуск скриптов дял создания текстовых документов
+!python /content/darknet/YOLOv4-Cloud-Tutorial/yolov4/generate_train.py
+!python /content/darknet/YOLOv4-Cloud-Tutorial/yolov4/generate_test.py
+
+#убедимся, что файлы моожено увидеть
+!ls /content/darknet/data/
+
+#загрузим предварительно обученные веса
+!wget https://github.com/AlexeyAB/darknet/releases/download/darknet_yolo_v3_optimal/yolov4.conv.137
+
+
+#обучение
+!./darknet detector train <path to obj.data> <path to custom config> yolov4.conv.137 -dont_show -map
+
+
+
+# нужно перевести наш пользовательский cfg в тестовый режим
+%cd cfg
+!sed -i 's/batch=64/batch=1/' yolov4-obj.cfg
+!sed -i 's/subdivisions=16/subdivisions=1/' yolov4-obj.cfg
+%cd ..
+
+# запуск
+!./darknet detector test data/obj.data cfg/yolov4-obj.cfg /mydrive/yolov4/backup/yolov4-obj_last.weights /mydrive/images/car2.jpg -thresh 0.3
+imShow('TC.jpg')
+
+
